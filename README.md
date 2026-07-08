@@ -31,14 +31,24 @@ Using `relative-file` as the source allows the package to reach up out of the ch
 With `local-file`, this would fail on some builds as the current file name isn't exposed properly, but the `relative-file` macro hacks around that restriction.
 Then using `git-source-file?` as `#:select?` will only allow non-ignored files from the current repository and discard the `.git` folder, making build hashes more repeatable and ensuring cached build artefacts aren't used.
 
-## Guix Channel Program
+The ultimate effect of this is that the channel can be used in the working tree like so:
+```bash
+$ guix build -Lguix miny
+```
+And with any other commands using the `-L` flag to add the channel directory to the load path.
+The channel functions both locally and remotely.
+
+I believe in terms of functionality, this is one of the best ways to provide Guix package definitions for an individual project.
+The main thing stopping it is the annoyance of creating new channels, which can be circumvented with the helper commands provided in the `channel-utils` package.
+
+## Guix Channel Helper Program
 
 A helper program `guix channel` is packaged in this channel, providing a quick way to initialise a channel and add keys to it.
 It has the following subcommands:
 
 ### Init
 
-Create a new channel.
+Create a new channel in the current Git repository or working directory if no Git repo is found.
 
 ### Authorize
 
