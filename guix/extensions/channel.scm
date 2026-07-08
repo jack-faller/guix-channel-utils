@@ -15,6 +15,9 @@
   #:use-module (srfi srfi-34)
   #:export (guix-channel))
 
+(define (log message . objects)
+  (apply format (current-error-port) message objects))
+
 (define (set-PATH)
   ;;@set-PATH-body@
   (values))
@@ -36,14 +39,14 @@
   (display "Add the keys provided as arguments to the keyring branch and to .guix-authorizations.")
   (newline))
 
-(define (display-program program . args)
-  (display "Running: ")
-  (display program)
-  (for-each (cut format #t " ~a" <>) args)
-  (newline))
 (define (invoke* program . args)
-  (apply display-program program args)
+  (apply log-program program args)
   (apply invoke program args))
+
+(define (log-program program . args)
+  (log "Running: ~a" program)
+  (for-each (cut log " ~a" <>) args)
+  (log "~%"))
 
 (define init-options
   '((url (single-char #\u) (value #t))
@@ -55,11 +58,11 @@
 (define fingerprint-regexp (make-regexp "^\\s*(([A-Z0-9]{4} ){5}( [A-Z0-9]{4}){5})$" regexp/extended regexp/newline))
 
 (define (command-output reader program . args)
-  (apply display-program program args)
+  (apply log-program program args)
   (let* ((pipe (apply open-pipe* OPEN_READ program args))
          (output (reader pipe)))
     (unless (= 0 (close-pipe pipe))
-      (error (format #f "Unexpected error executing ~a" program)))
+      (error "Unexpected error executing program" program))
     output))
 
 (define (add-to-authorizations keys)
@@ -73,9 +76,9 @@
         '()))
   (define fingerprints
     (let ((output (apply command-output get-string-all "gpg" "--list-keys" "--with-fingerprint" keys)))
-      (format #t "~%The following keys will be authorized:~%~a" output)
-      (display "Authorize these keys? (Y/n):")
-      (force-output)
+      (log "~%The following keys will be authorized:~%~a" output)
+      (log "Authorize these keys? (Y/n):")
+      (force-output (current-error-port))
       (unless (member (read-char) '(#\newline #\y #\Y))
         (error "Abort"))
       (map (cut match:substring <> 1) (list-matches fingerprint-regexp output))))
