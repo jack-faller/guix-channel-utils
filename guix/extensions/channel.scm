@@ -22,6 +22,9 @@
   ;;@set-PATH-body@
   (values))
 
+(define (general-help)
+  (display "Usage: guix channel init|authorize|export"))
+
 (define (init-help)
   (display "Usage: guix channel init [--key=] [--directory=] [--keyring-reference=] [--url=]")
   (newline)
@@ -36,7 +39,12 @@
 (define (authorize-help)
   (display "Usage: guix channel authorize key...")
   (newline)
-  (display "Add the keys provided as arguments to the keyring branch and to .guix-authorizations.")
+  (display "Add the keys provided as arguments to the keyring branch and to `.guix-authorizations`.")
+  (newline))
+(define (export-help)
+  (display "Usage: guix channel export")
+  (newline)
+  (display "Export the Scheme code to instance this channel.")
   (newline))
 
 (define (log-program program . args)
@@ -107,6 +115,9 @@
              fingerprints key-names))))))
   (values fingerprints file-names))
 
+(define (current-branch)
+  (command-output get-line "git" "rev-parse" "--abbrev-ref" "HEAD"))
+
 (define (add-to-keyring fingerprints file-names)
   "Add `fingerprints` to the keyring branch giving each one the corresponding name from `file-names`."
   (define keyring-reference
@@ -115,7 +126,7 @@
         (((? string? s)) s)
         (#f "keyring")
         (_ (error "Error in .guix-channel")))))
-  (define old-branch (command-output get-line "git" "rev-parse" "--abbrev-ref" "HEAD"))
+  (define old-branch (current-branch))
   (guard (c ((invoke-error? c)
              (invoke* "git" "checkout" keyring-reference)))
     (invoke* "git" "checkout" "--orphan" keyring-reference))
@@ -133,6 +144,7 @@
   (synopsis "Explore packages and services through REST API")
   (set-PATH)
   (match (car args)
+    ("--help" (general-help))
     ("init"
      (let ((keys '())
            (directory #f)
@@ -196,4 +208,37 @@
        (invoke* "git" "add" ".guix-authorizations")
        (invoke* "git" "commit" "-S" "-m"
                 (string-join (cons "Authorizes Guix channel keys\n" keys) "\n"))
-       (add-to-keyring fingerprints key-file-names)))))
+       (add-to-keyring fingerprints key-file-names)))
+    ("export"
+     (when (member "--help" args)
+       (export-help)
+       (exit 0))
+     (let ((git-root (git-toplevel)))
+       (unless git-root
+         (error "Fatal: not in Git repository, , try calling `guix channel init --key=<key>` to create one with a channel in it"))
+       (chdir git-root))
+     (let ((name (basename (getcwd))))
+       (pretty-print
+        `(channel
+          (name ',(string->symbol name))
+          (url ,(regexp-substitute/global
+                 #f "^git@([^:]*):(.*)\\.git$"
+                 (command-output get-line "git" "config" "--get" "remote.origin.url")
+                 'pre "https://" 1 "/" 2 'post))
+          ,@(let ((branch (current-branch)))
+              (if (equal? branch "master")
+                  '()
+                  `((branch ,(current-branch)))))
+          ,@(if (file-exists? ".guix-authorizations")
+                (let* ((commit+fingerprint
+                        (command-output get-line "git" "log" "--format=%H %GF" "--diff-filter=A" "--" ".guix-authorizations"))
+                       (split (string-split commit+fingerprint (cut char=? <> #\ ))))
+                  `((introduction
+                     (make-channel-introduction
+                      ,(car split)
+                      (openpgp-fingerprint
+                       ,(regexp-substitute/global
+                         #f "(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})"
+                         (cadr split)
+                         1 " " 2 " " 3 " " 4 " " 5 "  " 6 " " 7 " " 8 " " 9 " " 10))))))
+                '())))))))
