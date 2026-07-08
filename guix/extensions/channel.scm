@@ -10,10 +10,16 @@
   #:use-module (ice-9 pretty-print)
   #:use-module (ice-9 regex)
   #:use-module (ice-9 textual-ports)
+  #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-11)
   #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-34)
   #:export (guix-channel))
+
+;; TODO: guix channel test to build all packages from channel.
+;; Also would make sense to add a way of recording the environment in use when a commit was tested.
+;; I.e. which Guix version and other channels' versions.
+;; This would provide a way to reproduce old packages exactly even if they are out of date
 
 (define (log message . objects)
   (apply format (current-error-port) message objects))
@@ -109,11 +115,10 @@
       (pretty-print
        `(authorizations
          (version 0)
-         (,@existing
-          ,@(map
-             (lambda (fingerprint key-name)
-               `(,fingerprint (name ,key-name)))
-             fingerprints key-names))))))
+         ,(lset-union equal? existing
+                      (map (lambda (fingerprint key-name)
+                             `(,fingerprint (name ,key-name)))
+                           fingerprints key-names))))))
   (values fingerprints file-names))
 
 (define (current-branch)
@@ -134,7 +139,8 @@
   (invoke* "git" "reset" "--hard")
   (for-each
    (lambda (fingerprint file)
-     (invoke* "gpg" "--export" "--armor" "--output" file fingerprint))
+     (unless (file-exists? file)
+       (invoke* "gpg" "--export" "--armor" "--output" file fingerprint)))
    fingerprints file-names)
   (apply invoke* "git" "add" file-names)
   (invoke* "git" "commit" "-S" "-m" "Adds keys")
