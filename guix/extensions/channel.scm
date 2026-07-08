@@ -16,10 +16,31 @@
   #:use-module (srfi srfi-34)
   #:export (guix-channel))
 
-;; TODO: guix channel test to build all packages from channel.
+;; TODO: `guix channel test` to build all packages from channel.
 ;; Also would make sense to add a way of recording the environment in use when a commit was tested.
 ;; I.e. which Guix version and other channels' versions.
 ;; This would provide a way to reproduce old packages exactly even if they are out of date
+
+;; TODO: Add `--package` to `init`.
+;; `--package=xyz/jackfaller/miny/miny` should create:
+;; <channel-directory>/xyz/jackfaller/miny.scm
+#;((define-module (xyz jackfaller miny)
+    #:use-module (guix channels utils)
+    #:use-module (guix gexp)
+    #:use-module ((guix licenses) #:prefix license:)
+    #:use-module (guix packages)
+    #:export (miny))
+  (define-public miny
+    (package
+      (source (relative-file "../../.." #:recursive? #t #:select? git-source-file?))
+      ...)) )
+;; And creates guix.scm:
+#;((add-to-load-path (dirname (current-filename)))
+   (use-modules (xyz jackfaller miny))
+   (list miny))
+
+;; TODO: Allow `export` to take a URL/path argument(s) and use the packages there as a list for psub.
+;; TODO: Add `--dependency` option to add dependencies from `export`.
 
 (define (log message . objects)
   (apply format (current-error-port) message objects))
