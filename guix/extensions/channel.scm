@@ -41,6 +41,7 @@
   (newline)
   (display "Add the keys provided as arguments to the keyring branch and to `.guix-authorizations`.")
   (newline))
+
 (define (export-help)
   (display "Usage: guix channel export")
   (newline)

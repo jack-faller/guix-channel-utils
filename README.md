@@ -7,7 +7,8 @@
  (introduction
   (make-channel-introduction
    "657d9af9cf1729a288a9c25f014523ff34ac656f"
-   (openpgp-fingerprint "D97A 5464 A392 0366 1ED9  5C07 A043 7B42 9C10 4C61"))))
+   (openpgp-fingerprint
+    "D97A 5464 A392 0366 1ED9  5C07 A043 7B42 9C10 4C61"))))
 ```
 
 ## Library Functions
