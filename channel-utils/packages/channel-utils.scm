@@ -1,4 +1,4 @@
-(define-module (channel-utils packages channel)
+(define-module (channel-utils packages channel-utils)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages package-management)
@@ -9,11 +9,11 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module ((guix search-paths) #:select ($GUIX_EXTENSIONS_PATH))
-  #:export (guix-channel))
+  #:export (channel-utils))
 
-(define guix-channel
+(define channel-utils
   (package
-    (name "guix-channel")
+    (name "channel-utils")
     (version "0.0.0")
     (source (relative-file
              "../.." name #:recursive? #t
