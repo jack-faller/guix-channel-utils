@@ -17,7 +17,8 @@ In the corresponding file, the definition looks like this:
   ...)
 ```
 Using `relative-file` as the source allows the package to reach up out of the channel and grab the source files in the root of the repository.
-Then `git-source-file?` will discard any non-Git-tracked files from the input set to avoid inconsistent build hashes.
+With `local-file`, this would fail on some builds as the current file name isn't exposed properly, but the `relative-file` macro hacks around that restriction.
+Then using `git-source-file?` as `#:select?` will only allow non-ignored files from the current repository and discard the `.git` folder, making build hashes more repeatable and ensuring cached build artefacts aren't used.
 
 ## Guix Channel Program
 

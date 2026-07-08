@@ -39,14 +39,13 @@
   (display "Add the keys provided as arguments to the keyring branch and to .guix-authorizations.")
   (newline))
 
-(define (invoke* program . args)
-  (apply log-program program args)
-  (apply invoke program args))
-
 (define (log-program program . args)
   (log "Running: ~a" program)
   (for-each (cut log " ~a" <>) args)
   (log "~%"))
+(define (invoke* program . args)
+  (apply log-program program args)
+  (apply invoke program args))
 
 (define init-options
   '((url (single-char #\u) (value #t))
@@ -58,6 +57,7 @@
 (define fingerprint-regexp (make-regexp "^\\s*(([A-Z0-9]{4} ){5}( [A-Z0-9]{4}){5})$" regexp/extended regexp/newline))
 
 (define (command-output reader program . args)
+  "Call `reader` on the output port of program and return the result, fail if program returns non-zero."
   (apply log-program program args)
   (let* ((pipe (apply open-pipe* OPEN_READ program args))
          (output (reader pipe)))
@@ -66,7 +66,7 @@
     output))
 
 (define (add-to-authorizations keys)
-  "Write to the .guix-authorizations file and return (value fingerprints file-names) for `add-to-keyring`"
+  "Write to the `.guix-authorizations` file and return `(values fingerprints file-names)` for `add-to-keyring`"
   (define existing
     (if (file-exists? ".guix-authorizations")
         (match (call-with-input-file ".guix-authorizations" read)
@@ -108,6 +108,7 @@
   (values fingerprints file-names))
 
 (define (add-to-keyring fingerprints file-names)
+  "Add `fingerprints` to the keyring branch giving each one the corresponding name from `file-names`."
   (define keyring-reference
     (let ((channel-info (cdr (call-with-input-file ".guix-channel" read))))
       (match (assoc-ref channel-info 'keyring-reference)
@@ -163,6 +164,7 @@
        (define git-root (git-toplevel))
        (if git-root
            (chdir git-root)
+           ;; Force SHA1 as Guix doesn't recognise SHA256 channel repos.
            (invoke* "git" "init" "--object-format=sha1"))
        (with-output-to-file ".guix-channel"
          (lambda ()

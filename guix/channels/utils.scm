@@ -5,6 +5,7 @@
   #:export (git-toplevel relative-file git-source-file?))
 
 (define (system*/quiet command . args)
+  "Execute a command with silent output."
   (with-output-to-file "/dev/null"
     (lambda ()
       (with-error-to-file "/dev/null"
@@ -12,6 +13,7 @@
           (apply system* command args))))))
 
 (define (git-toplevel)
+  "Get the full path to the root of the current Git repo, or #f if not in one."
   (let* ((pipe (with-error-to-file "/dev/null"
                  (lambda ()
                    (open-pipe* OPEN_READ "git" "rev-parse" "--show-toplevel"))))
@@ -21,6 +23,7 @@
         #f)))
 
 (define (git-source-file? file stat)
+  "Return true if file is not `.git` or a file ignored by git version control."
   (define old-cwd (getcwd))
   (chdir (dirname file))
   (define keep?
