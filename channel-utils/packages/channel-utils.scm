@@ -63,4 +63,4 @@
     (home-page "https://github.com/jack-faller/guix-channel-utils")
     (synopsis "Utilities to make authoring channels easier")
     (description synopsis)
-    (license license:gpl3+)))
+    (license license:lgpl3+)))
