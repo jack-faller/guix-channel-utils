@@ -206,6 +206,8 @@
            (chdir git-root)
            ;; Force SHA1 as Guix doesn't recognise SHA256 channel repos.
            (invoke* "git" "init" "--object-format=sha1"))
+       (when (file-exists? ".guix-channel")
+         (error "Channel already exists in this directory"))
        (with-output-to-file ".guix-channel"
          (lambda ()
            (pretty-print
@@ -213,7 +215,11 @@
               (version 0)
               ,@(if url `((url ,url)) '())
               ,@(if directory `((directory ,directory)) '())
-              ,@(if keyring-reference `((keyring-reference ,keyring-reference)) '())))))
+              ,@(if keyring-reference `((keyring-reference ,keyring-reference)) '())
+              (dependencies
+               (channel
+                (name channel-utils)
+                (url "https://github.com/jack-faller/guix-channel-utils")))))))
        (define-values (fingerprints key-file-names)
          (if (null? keys)
              (values '() '())
