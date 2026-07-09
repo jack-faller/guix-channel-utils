@@ -337,6 +337,9 @@
   (warn-keys metadata)
   (instance-metadata (combine metadata-old metadata)))
 
+(define fingerprint-groups-regexp
+  (make-regexp (apply string-append (map (const "(.{4})") (iota 10)))))
+
 (define-command (guix-channel . args)
   (category extension)
   (synopsis "Explore packages and services through REST API")
@@ -377,6 +380,10 @@
        (chdir git-root))
      (let ((name (basename (getcwd))))
        (define metadata (load-metadata))
+       (define (prettify-fingerprint fingerprint)
+         (regexp-substitute/global
+          #f fingerprint-groups-regexp fingerprint
+          1 " " 2 " " 3 " " 4 " " 5 "  " 6 " " 7 " " 8 " " 9 " " 10))
        (pretty-print
         `(channel
           (name ',(string->symbol name))
@@ -387,14 +394,12 @@
                   `((branch ,(current-branch)))))
           ,@(if (file-exists? ".guix-authorizations")
                 (let* ((commit+fingerprint
+                        ;; Get the commit hash and fingerprint of the first commit containing the `.guix-authorizations` file.
                         (command-output get-line "git" "log" "--format=%H %GF" "--diff-filter=A" "--" ".guix-authorizations"))
                        (split (string-split commit+fingerprint (cut char=? <> #\ ))))
                   `((introduction
                      (make-channel-introduction
                       ,(car split)
-                      (openpgp-fingerprint
-                       ,(regexp-substitute/global
-                         #f "(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})"
-                         (cadr split)
-                         1 " " 2 " " 3 " " 4 " " 5 "  " 6 " " 7 " " 8 " " 9 " " 10))))))
+                      (openpgp-fingerprint ,(prettify-fingerprint (cadr split)))))))
                 '())))))))
+
