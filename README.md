@@ -36,7 +36,7 @@ The ultimate effect of this is that the channel can be used in the working tree 
 $ guix build -Lguix miny
 ```
 And with any other commands using the `-L` flag to add the channel directory to the load path.
-The channel functions both locally and remotely.
+The channel functions both locally and remotely, with no need for users to copy paste package definitions from `guix.scm`.
 
 I believe in terms of functionality, this is one of the best ways to provide Guix package definitions for an individual project.
 The main thing stopping it is the annoyance of creating new channels, which can be circumvented with the helper commands provided in the `channel-utils` package.
@@ -44,16 +44,9 @@ The main thing stopping it is the annoyance of creating new channels, which can 
 ## Guix Channel Helper Program
 
 A helper program `guix channel` is packaged in this channel, providing a quick way to initialise a channel and add keys to it.
-It has the following subcommands:
+It has the subcommands `init`, `add`, `set`, `get`, and `remove`.
+These can each be used to update the to update the information in a channel.
+Supported fields to initialise/update are authorized keys, the URL, the channel directory, channel dependencies, and the keyring branch name.
+`Init` will only work in directories which aren't a part of a channel, `add` will not overwrite values, `set` will overwrite values.
 
-### Init
-
-Create a new channel in the current Git repository or working directory if no Git repo is found.
-
-### Authorize
-
-Add a new key to the channel.
-
-### Export
-
-Print the Scheme code for instancing the channel.
+Additionally `guix channel export` will output the Scheme code for instancing a channel and with an introduction.
